@@ -237,96 +237,6 @@ func createToolbar(left, right *SidePanel, w fyne.Window) fyne.CanvasObject {
 	return toolbar
 }
 
-//func createToolbar(left, right *SidePanel, w fyne.Window) fyne.CanvasObject {
-//	dates := loadAvailableDates()
-//	if len(dates) == 0 {
-//		return widget.NewLabel("Не найдено ни одной даты в " + rootDir)
-//	}
-//
-//	date1Select := widget.NewSelect(dates, func(s string) {
-//		left.date = s
-//		left.updateVendors()
-//	})
-//	date2Select := widget.NewSelect(dates, func(s string) {
-//		right.date = s
-//		right.updateVendors()
-//	})
-//
-//	// Начальные значения
-//	date1Select.SetSelectedIndex(0)
-//	if len(dates) > 0 {
-//		date1Select.SetSelectedIndex(0)
-//	}
-//	if len(dates) > 1 {
-//		date2Select.SetSelectedIndex(1)
-//	}
-//	date2Select.SetSelectedIndex(min(1, len(dates)-1))
-//
-//	group1 := widget.NewSelect([]string{}, func(s string) {
-//		left.group = s
-//		left.updateVendors()
-//	})
-//	group2 := widget.NewSelect([]string{}, func(s string) {
-//		right.group = s
-//		right.updateVendors()
-//	})
-//
-//	vendor1 := widget.NewSelect([]string{}, func(s string) {
-//		left.vendor = s
-//		left.updateFiles()
-//	})
-//	vendor2 := widget.NewSelect([]string{}, func(s string) {
-//		right.vendor = s
-//		right.updateFiles()
-//	})
-//
-//	file1 := widget.NewSelect([]string{}, func(s string) {
-//		left.file = s
-//		left.loadAndCompare()
-//	})
-//	file2 := widget.NewSelect([]string{}, func(s string) {
-//		right.file = s
-//		right.loadAndCompare()
-//	})
-//
-//	compareBtn := widget.NewButtonWithIcon("Сравнить", theme.ViewRefreshIcon(), func() {
-//		left.loadAndCompare()
-//		right.loadAndCompare()
-//	})
-//
-//	status := widget.NewLabel("Готов")
-//
-//	toolbar := container.NewGridWithColumns(7,
-//		widget.NewLabel("Дата 1:"), date1Select,
-//		widget.NewLabel("Группа:"), group1,
-//		widget.NewLabel("Вендор:"), vendor1,
-//		widget.NewLabel("Файл:"), file1,
-//		layout.NewSpacer(),
-//		widget.NewLabel("Дата 2:"), date2Select,
-//		widget.NewLabel("Группа:"), group2,
-//		widget.NewLabel("Вендор:"), vendor2,
-//		widget.NewLabel("Файл:"), file2,
-//		layout.NewSpacer(),
-//		compareBtn,
-//		status,
-//	)
-//
-//	// Связываем панели с выпадающими списками
-//	left.dateSelect = date1Select
-//	left.groupSelect = group1
-//	left.vendorSelect = vendor1
-//	left.fileSelect = file1
-//	left.status = status
-//
-//	right.dateSelect = date2Select
-//	right.groupSelect = group2
-//	right.vendorSelect = vendor2
-//	right.fileSelect = file2
-//	right.status = status
-//
-//	return toolbar
-//}
-
 type SidePanel struct {
 	title        string
 	container    fyne.CanvasObject
@@ -379,46 +289,6 @@ func (p *SidePanel) trySyncFileTo(other *SidePanel) {
 	}
 }
 
-//func (p *SidePanel) trySyncFileTo(other *SidePanel) {
-//	if other == nil || p.file == "" {
-//		return
-//	}
-//
-//	if other.file != "" && other.file != p.file {
-//		// можно добавить предупреждение в статус, если нужно
-//		// p.status.SetText("В другой панели уже выбран другой файл")
-//		return
-//	}
-//
-//	// Проверяем, есть ли такой же файл в другой дате/группе/вендоре
-//	targetPath := filepath.Join(rootDir, other.date, "config_files_clear", other.group, other.vendor, p.file)
-//
-//	// Проверяем существование файла
-//	if _, err := os.Stat(targetPath); err == nil {
-//		// файл существует → выбираем его
-//		other.file = p.file
-//		other.fileSelect.SetSelected(p.file)
-//		other.loadAndCompare()
-//		log.Printf("Синхронизирован файл %q в %s", p.file, other.title)
-//	} else {
-//		// файла нет → показываем сообщение
-//		// файла нет → сообщение ТОЛЬКО если вторая дата/группа/вендор уже выбраны
-//		if other.date != "" && other.group != "" && other.vendor != "" {
-//			other.text.ParseMarkdown(
-//				fmt.Sprintf("**Файл отсутствует** на дату **%s**\n\n"+
-//					"Имя файла: `%s`\n"+
-//					"Группа: %s\nВендор: %s\n"+
-//					"Путь, где искали: `%s`\n"+
-//					"Ошибка: %v",
-//					other.date, p.file, other.group, other.vendor, targetPath, err),
-//			)
-//			other.text.Refresh()
-//			other.status.SetText("Файл не найден в этой дате")
-//		}
-//		// если вторая панель ещё не полностью заполнена — просто ничего не показываем
-//	}
-//}
-
 func newSidePanel(title string) *SidePanel {
 
 	p := &SidePanel{title: title}
@@ -455,13 +325,18 @@ func (p *SidePanel) updateGroups() {
 	}
 
 	groups := loadGroupsForDate(p.date)
-	log.Printf("updateGroups для даты %s → найдено групп: %d → %v", p.date, len(groups), groups)
 	sort.Strings(groups)
 	p.groupSelect.Options = groups
-	if len(groups) > 0 && !contains(groups, p.group) {
-		p.group = groups[0]
-		p.groupSelect.SetSelected(p.group)
+
+	// Если ранее выбранная группа больше не существует → сбрасываем
+	if p.group != "" && !contains(groups, p.group) {
+		p.group = ""
+		p.groupSelect.ClearSelected()
 	}
+
+	// НЕ выбираем автоматически первую группу!
+	// p.group = groups[0]; p.groupSelect.SetSelected(p.group) ← УДАЛИТЬ
+
 	p.updateVendors()
 }
 
@@ -469,13 +344,19 @@ func (p *SidePanel) updateVendors() {
 	if p.date == "" || p.group == "" || p.vendorSelect == nil {
 		return
 	}
+
 	vendors := loadVendorsForDateGroup(p.date, p.group)
 	sort.Strings(vendors)
 	p.vendorSelect.Options = vendors
-	if len(vendors) > 0 && !contains(vendors, p.vendor) {
-		p.vendor = vendors[0]
-		p.vendorSelect.SetSelected(p.vendor)
+
+	if p.vendor != "" && !contains(vendors, p.vendor) {
+		p.vendor = ""
+		p.vendorSelect.ClearSelected()
 	}
+
+	// НЕ выбираем автоматически первого вендора!
+	// p.vendor = vendors[0]; p.vendorSelect.SetSelected(p.vendor) ← УДАЛИТЬ
+
 	p.updateFiles()
 }
 
@@ -485,23 +366,21 @@ func (p *SidePanel) updateFiles() {
 	}
 	files := loadFilesForDateGroupVendor(p.date, p.group, p.vendor)
 	sort.Strings(files)
-	println("файлы в updateFiles")
-	println(files)
 	p.fileSelect.Options = files
+
 	if p.file != "" && !contains(files, p.file) {
 		p.file = ""
 		p.fileSelect.ClearSelected()
 		p.text.ParseMarkdown("**Выбранный ранее файл больше недоступен** в этой папке")
 		p.text.Refresh()
 	}
-	//if len(files) > 0 && p.file != "" && !contains(files, p.file) {
-	//	p.file = "" // сбрасываем, если файл больше не существует в списке
-	//	p.fileSelect.ClearSelected()
-	//}
-	if len(files) > 0 && p.file == "" {
-		p.file = files[0]
-		p.fileSelect.SetSelected(p.file)
-	}
+
+	// НЕ выбираем автоматически первый файл!
+	// if len(files) > 0 && p.file == "" {
+	//     p.file = files[0]
+	//     p.fileSelect.SetSelected(p.file)
+	// } ← УДАЛИТЬ ЭТОТ БЛОК
+
 	p.loadAndCompare()
 }
 
@@ -619,22 +498,6 @@ func loadAvailableDates() []string {
 	return dates
 }
 
-//	func loadAvailableDates() []string {
-//		entries, err := os.ReadDir(rootDir)
-//		if err != nil {
-//			return nil
-//		}
-//
-//		var dates []string
-//		for _, e := range entries {
-//			if e.IsDir() && looksLikeDate(e.Name()) {
-//				dates = append(dates, e.Name())
-//			}
-//		}
-//		sort.Sort(sort.Reverse(sort.StringSlice(dates))) // новые сверху
-//		return dates
-//	}
-
 func loadVendorsForDate(date string) []string {
 	//base := filepath.Join(rootDir, p.date, "config_files_clear", p.vendor, p.file)
 	base := filepath.Join(rootDir, date, "config_files_clear")
@@ -654,36 +517,6 @@ func loadVendorsForDate(date string) []string {
 	return groups
 }
 
-//func loadVendorsForDate(date string) []string {
-//	path := filepath.Join(rootDir, date)
-//	entries, err := os.ReadDir(path)
-//	if err != nil {
-//		return nil
-//	}
-//	var vendors []string
-//	for _, e := range entries {
-//		if e.IsDir() {
-//			vendors = append(vendors, e.Name())
-//		}
-//	}
-//	return vendors
-//}
-
-//	func loadFilesForDateVendor(date, vendor string) []string {
-//		path := filepath.Join(rootDir, date, vendor)
-//		var files []string
-//		filepath.WalkDir(path, func(p string, d fs.DirEntry, err error) error {
-//			if err != nil {
-//				return nil
-//			}
-//			if !d.IsDir() {
-//				rel, _ := filepath.Rel(filepath.Join(rootDir, date, vendor), p)
-//				files = append(files, rel)
-//			}
-//			return nil
-//		})
-//		return files
-//	}
 func loadFilesForDateVendor(date, group string) []string {
 	path := filepath.Join(rootDir, date, "config_files_clear", group)
 	var files []string
