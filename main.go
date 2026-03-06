@@ -69,11 +69,12 @@ func main() {
 	fyne.Do(func() {
 		right.Content.Refresh()
 	})
-	leftScroll := container.NewVScroll(left.Container)
-	rightScroll := container.NewVScroll(right.Container)
 
-	leftScroll.SetMinSize(fyne.NewSize(400, 0))
-	rightScroll.SetMinSize(fyne.NewSize(400, 0))
+	leftScroll := container.NewScroll(left.Container)
+	rightScroll := container.NewScroll(right.Container)
+
+	//leftScroll.SetMinSize(fyne.NewSize(400, 0))
+	//rightScroll.SetMinSize(fyne.NewSize(400, 0))
 
 	Content := container.NewHSplit(leftScroll, rightScroll)
 	Content.SetOffset(0.5)

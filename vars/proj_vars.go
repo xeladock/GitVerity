@@ -3,12 +3,14 @@ package vars
 import (
 	//"GitVersity/btn_add"
 	"fmt"
+	"image/color"
 	"log"
 	"os"
 	"path/filepath"
 	"sort"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
@@ -608,6 +610,7 @@ func CreateToolbar(left, right *SidePanel, w fyne.Window) fyne.CanvasObject {
 	//println(Dates)
 	//1001
 	Date1Select := widget.NewSelect(Dates, func(s string) {
+
 		left.Date = s
 		left.UpDateGroups()
 		UpDateDateOptions(left, right)
@@ -618,6 +621,7 @@ func CreateToolbar(left, right *SidePanel, w fyne.Window) fyne.CanvasObject {
 		if s == "" {
 			return // пропускаем ранний вызов при создании виджета
 		}
+
 		right.Date = s
 		right.UpDateGroups()
 		UpDateDateOptions(left, right)
@@ -626,8 +630,8 @@ func CreateToolbar(left, right *SidePanel, w fyne.Window) fyne.CanvasObject {
 		//trySyncFromDate1ToDate2(left, right) // ← возвращаем
 	})
 
-	Date1Select.PlaceHolder = "Выберите дату..."
-	Date2Select.PlaceHolder = "Выберите дату..."
+	Date1Select.PlaceHolder = "Дата ЛП"
+	Date2Select.PlaceHolder = "Дата ПП"
 
 	// ────────────────────────────────────────
 	// Новый Select для группы (ЦОД / ЛВС)
@@ -639,7 +643,8 @@ func CreateToolbar(left, right *SidePanel, w fyne.Window) fyne.CanvasObject {
 		right.Group = s
 		right.UpDateVendors()
 	})
-
+	Group1.PlaceHolder = "Группа ЛП"
+	Group2.PlaceHolder = "Группа ПП"
 	// ────────────────────────────────────────
 	// Select для вендора (Cisco, Juniper...)
 	Vendor1 := widget.NewSelect([]string{}, func(s string) {
@@ -650,6 +655,9 @@ func CreateToolbar(left, right *SidePanel, w fyne.Window) fyne.CanvasObject {
 		right.Vendor = s
 		right.UpDateFiles()
 	})
+
+	Vendor1.PlaceHolder = "Вендор ЛП"
+	Vendor2.PlaceHolder = "Вендор ПП"
 
 	File1 := widget.NewSelect([]string{}, func(selected string) {
 		if selected == left.File { // ничего не изменилось — выходим
@@ -677,6 +685,9 @@ func CreateToolbar(left, right *SidePanel, w fyne.Window) fyne.CanvasObject {
 		}
 	})
 
+	File1.PlaceHolder = "Файл ЛП"
+	File2.PlaceHolder = "Файл ПП"
+
 	compareBtn := widget.NewButtonWithIcon("Сравнить", theme.ViewRefreshIcon(), func() {
 		left.LoadAndCompare()
 		right.LoadAndCompare()
@@ -685,94 +696,43 @@ func CreateToolbar(left, right *SidePanel, w fyne.Window) fyne.CanvasObject {
 		TrySyncFromDate1ToDate2(left, right)
 	})
 
-	//widget.NewButto
-
-	//status := widget.NewLabel("Готов")
-	//1000
-
-	//pair := container.NewBorder(
-	//	nil, nil,
-	//	nil, nil,
-	//	container.NewHBox(
-	//		widget.NewLabel("Дата 1:"),
-	//		Date1Select,
-	//	),
-	//)
-	//
-	//pair2 := container.NewBorder(
-	//	nil, nil,
-	//	nil, nil,
-	//	container.NewHBox(
-	//		widget.NewLabel("Группа:"), Group1,
-	//	),
-	//)
-	//pair3 := container.NewBorder(
-	//	nil, nil,
-	//	nil, nil,
-	//	container.NewHBox(
-	//		widget.NewLabel("Вендор:"), Vendor1,
-	//	),
-	//)
-	//pair4 := container.NewBorder(
-	//	nil, nil,
-	//	nil, nil,
-	//	container.NewHBox(
-	//		widget.NewLabel("Файл:"), File1,
-	//	),
-	//)
-	//
-	//pair5 := container.NewBorder(
-	//	nil, nil,
-	//	nil, nil,
-	//	container.NewHBox(
-	//		widget.NewLabel("Дата 2:"),
-	//		Date2Select,
-	//	),
-	//)
-	//
-	//pair6 := container.NewBorder(
-	//	nil, nil,
-	//	nil, nil,
-	//	container.NewHBox(
-	//		widget.NewLabel("Группа:"), Group2,
-	//	),
-	//)
-	//pair7 := container.NewBorder(
-	//	nil, nil,
-	//	nil, nil,
-	//	container.NewHBox(
-	//		widget.NewLabel("Вендор:"), Vendor2,
-	//	),
-	//)
-	//pair8 := container.NewBorder(
-	//	nil, nil,
-	//	nil, nil,
-	//	container.NewHBox(
-	//		widget.NewLabel("Файл:"), File2,
-	//	),
-	//)
-	//smallSpacer := container.NewVBox(layout.NewSpacer()) // нулевой отступ
-	//smallSpacer.SetMinSize(fyne.NewSize(0, 4))
-
 	toolbar := container.NewVBox(
 
 		container.NewHBox(
-			container.NewGridWithColumns(4,
-				container.NewHBox(widget.NewLabel("Дата 1:"), Date1Select),
-				container.NewHBox(widget.NewLabel("Группа:"), Group1),
-				container.NewHBox(widget.NewLabel("Вендор:"), Vendor1),
-				container.NewHBox(widget.NewLabel("Файл:"), File1),
-			),
+			widget.NewLabel("Дата 1:"),
+			fixedWidth(Date1Select, 100),
+			//hspace(5),
+
+			widget.NewLabel("Группа:"),
+			fixedWidth(Group1, 120),
+			hspace(5),
+
+			widget.NewLabel("Вендор:"),
+			fixedWidth(Vendor1, 150),
+			hspace(5),
+
+			widget.NewLabel("Файл:"),
+			fixedWidth(File1, 150),
+
 			layout.NewSpacer(),
 		),
 
 		container.NewHBox(
-			container.NewGridWithColumns(4,
-				container.NewHBox(widget.NewLabel("Дата 2:"), Date2Select),
-				container.NewHBox(widget.NewLabel("Группа:"), Group2),
-				container.NewHBox(widget.NewLabel("Вендор:"), Vendor2),
-				container.NewHBox(widget.NewLabel("Файл:"), File2),
-			),
+			widget.NewLabel("Дата 2:"),
+			fixedWidth(Date2Select, 100),
+			//hspace(5),
+
+			widget.NewLabel("Группа:"),
+			fixedWidth(Group2, 120),
+			hspace(5),
+
+			widget.NewLabel("Вендор:"),
+			fixedWidth(Vendor2, 150),
+			hspace(5),
+
+			widget.NewLabel("Файл:"),
+			fixedWidth(File2, 150),
+
 			layout.NewSpacer(),
 		),
 
@@ -811,6 +771,23 @@ func CreateToolbar(left, right *SidePanel, w fyne.Window) fyne.CanvasObject {
 
 	return toolbar
 }
+
+func space2(w float32) fyne.CanvasObject {
+	return canvas.NewRectangle(color.Transparent)
+}
+func hspace(w float32) fyne.CanvasObject {
+	r := canvas.NewRectangle(color.Transparent)
+	r.SetMinSize(fyne.NewSize(w, 1))
+	return r
+}
+
+func fixedWidth(obj fyne.CanvasObject, w float32) fyne.CanvasObject {
+	return container.NewGridWrap(
+		fyne.NewSize(w, obj.MinSize().Height),
+		obj,
+	)
+}
+
 func ResetButton(left, right *SidePanel) fyne.CanvasObject {
 	return widget.NewButton("Сброс", func() {
 		// Сбрасываем левую панель
